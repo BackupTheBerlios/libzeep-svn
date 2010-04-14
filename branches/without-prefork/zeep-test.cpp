@@ -8,8 +8,6 @@
 #include <iostream>
 
 #include <boost/lexical_cast.hpp>
-#include <sys/wait.h>
-#include <unistd.h>
 
 using namespace std;
 
@@ -202,26 +200,26 @@ void my_server::Find(
 
 int main(int argc, const char* argv[])
 {
-    sigset_t new_mask, old_mask;
-    sigfillset(&new_mask);
-    pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
+    //sigset_t new_mask, old_mask;
+    //sigfillset(&new_mask);
+    //pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 
-	my_server server("0.0.0.0", 10333);
+	my_server server("127.0.0.1", 10333);
     boost::thread t(boost::bind(&my_server::run, &server, 1));
 
-    pthread_sigmask(SIG_SETMASK, &old_mask, 0);
+    //pthread_sigmask(SIG_SETMASK, &old_mask, 0);
 
 	// Wait for signal indicating time to shut down.
-	sigset_t wait_mask;
-	sigemptyset(&wait_mask);
-	sigaddset(&wait_mask, SIGINT);
-	sigaddset(&wait_mask, SIGQUIT);
-	sigaddset(&wait_mask, SIGTERM);
-	pthread_sigmask(SIG_BLOCK, &wait_mask, 0);
-	int sig = 0;
-	sigwait(&wait_mask, &sig);
+	//sigset_t wait_mask;
+	//sigemptyset(&wait_mask);
+	//sigaddset(&wait_mask, SIGINT);
+	//sigaddset(&wait_mask, SIGQUIT);
+	//sigaddset(&wait_mask, SIGTERM);
+	//pthread_sigmask(SIG_BLOCK, &wait_mask, 0);
+	//int sig = 0;
+	//sigwait(&wait_mask, &sig);
 	
-	server.stop();
+	//server.stop();
 	t.join();
 
 	return 0;
