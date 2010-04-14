@@ -644,7 +644,7 @@ bool attribute::is_names(wstring& s) const
 			++c;
 			t += ' '; 
 			
-			while (isspace(*c))
+			while (c != s.end() and isspace(*c))
 				++c;
 		}
 
@@ -702,7 +702,7 @@ bool attribute::is_nmtokens(wstring& s) const
 			result = true;
 			++c;
 		}
-		while (isspace(*c));
+		while (c != s.end() and isspace(*c));
 		
 		t += ' ';
 	}

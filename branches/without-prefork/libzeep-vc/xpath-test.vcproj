@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="libzeep-vc"
-	ProjectGUID="{8DB71094-266D-4B6B-8076-0F58A3944F4B}"
-	RootNamespace="libzeepvc"
+	Name="xpath-test"
+	ProjectGUID="{8E4C0575-1AEC-4525-8812-045949F74793}"
+	RootNamespace="xpathtest"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -20,7 +20,7 @@
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
+			ConfigurationType="1"
 			CharacterSet="1"
 			>
 			<Tool
@@ -46,7 +46,6 @@
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
-				DisableLanguageExtensions="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
@@ -62,10 +61,19 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
+				Name="VCLinkerTool"
+				AdditionalDependencies="$(InputDir)..\libzeep-vc\Debug\libzeep-vc.lib"
+				LinkIncremental="2"
+				AdditionalLibraryDirectories="C:\Boost\lib"
+				GenerateDebugInformation="true"
+				SubSystem="1"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -75,6 +83,9 @@
 			/>
 			<Tool
 				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -110,7 +121,7 @@
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
-				UsePrecompiledHeader="2"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -164,76 +175,14 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\src\connection.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\doctype.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\document.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\exception.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\http-server.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\node.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\parser.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\reply.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\request_parser.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\soap-envelope.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\soap-server.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\unicode_support.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\writer.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\xpath.cpp"
+				RelativePath="..\tests\src\xpath-test.cpp"
 				>
 			</File>
 		</Filter>
-		<Filter
-			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl;inc;xsd"
-			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
+		<File
+			RelativePath=".\ReadMe.txt"
 			>
-			<File
-				RelativePath=".\stdafx.h"
-				>
-			</File>
-			<File
-				RelativePath=".\targetver.h"
-				>
-			</File>
-		</Filter>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>
