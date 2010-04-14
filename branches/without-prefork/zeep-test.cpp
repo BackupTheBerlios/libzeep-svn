@@ -200,62 +200,14 @@ void my_server::Find(
 	out.hits.push_back(h);
 }
 
-#define FORKED_MODE 0
-
 int main(int argc, const char* argv[])
 {
-#if FORKED_MODE
- 	for (;;)
- 	{
- 		cout << "restarting server" << endl;
- 		
-	    sigset_t new_mask, old_mask;
-	    sigfillset(&new_mask);
-	    pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
-	
-		auto_ptr<zeep::http::server_starter> starter(
-			zeep::http::server_starter::create<my_server>("0.0.0.0", 10333, true, 2));
-		boost::thread t(
-			boost::bind(&zeep::http::server_starter::run, starter.get()));
-	
-	    pthread_sigmask(SIG_SETMASK, &old_mask, 0);
-	
-		// start listening
-		starter->start_listening();
-	 
-		// Wait for signal indicating time to shut down.
-		sigset_t wait_mask;
-		sigemptyset(&wait_mask);
-		sigaddset(&wait_mask, SIGINT);
-		sigaddset(&wait_mask, SIGQUIT);
-		sigaddset(&wait_mask, SIGTERM);
-		sigaddset(&wait_mask, SIGCHLD);
-		pthread_sigmask(SIG_BLOCK, &wait_mask, 0);
-		int sig = 0;
-		sigwait(&wait_mask, &sig);
-	
-		starter->stop();
-		t.join();
-		
-		if (sig == SIGCHLD)
-		{
-			int status, pid;
-			pid = waitpid(-1, &status, WUNTRACED);
-	
-			if (pid != -1 and WIFSIGNALED(status))
-				cout << "child " << pid << " terminated by signal " << WTERMSIG(status) << endl;
-			continue;
-		}
-		
-		break;
- 	}
-#else
     sigset_t new_mask, old_mask;
     sigfillset(&new_mask);
     pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
 
 	my_server server("0.0.0.0", 10333);
-    boost::thread t(boost::bind(&my_server::run, &server, "0.0.0.0", 10333, 1));
+    boost::thread t(boost::bind(&my_server::run, &server, 1));
 
     pthread_sigmask(SIG_SETMASK, &old_mask, 0);
 
@@ -271,6 +223,6 @@ int main(int argc, const char* argv[])
 	
 	server.stop();
 	t.join();
-#endif
+
 	return 0;
 }
