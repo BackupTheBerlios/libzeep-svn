@@ -22,6 +22,7 @@
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="1"
+			BuildLogFile="$(IntDir)\BuildLog3.htm"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -118,12 +119,14 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="&quot;C:\Boost\include\boost-1_39&quot;;C:\Users\maarten\projects\libzeep"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
+				ForcedIncludeFiles="$(ProjectDir)stdafx.h"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -136,7 +139,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="$(InputDir)..\libzeep-vc\Release\libzeep-vc.lib"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="C:\Boost\lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
