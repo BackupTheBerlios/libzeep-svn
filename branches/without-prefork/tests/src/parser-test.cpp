@@ -11,20 +11,15 @@
 #include "zeep/xml/document.hpp"
 #include "zeep/exception.hpp"
 #include "zeep/xml/parser.hpp"
-#include "zeep/xml/expat_doc.hpp"
-#include "zeep/xml/libxml2_doc.hpp"
 #include "zeep/xml/writer.hpp"
 #include "zeep/xml/xpath.hpp"
+#include "zeep/xml/unicode_support.hpp"
 
 using namespace std;
 using namespace zeep;
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 namespace ba = boost::algorithm;
-
-#define DOC		xml::document
-//#define DOC		xml::expat_doc
-//#define DOC		xml::libxml2_doc
 
 #define foreach BOOST_FOREACH
 
@@ -36,7 +31,7 @@ bool run_valid_test(istream& is, fs::path& outfile)
 {
 	bool result = true;
 	
-	DOC indoc;
+	xml::document indoc;
 	is >> indoc;
 	
 	stringstream s;
@@ -47,6 +42,7 @@ bool run_valid_test(istream& is, fs::path& outfile)
 	w.set_wrap(false);
 	w.set_collapse_empty_elements(false);
 	w.set_escape_whitespace(true);
+	w.set_no_comment(true);
 	indoc.write(w);
 
 	string s1 = s.str();
@@ -70,13 +66,13 @@ bool run_valid_test(istream& is, fs::path& outfile)
 
 		if (s1 != s2)
 		{
-			cout << "output differs" << endl
-				 << "generated:      " << s1 << endl
-				 << "expected:       " << s2 << endl
-				 << endl;
-			
-			xml::document a; a.set_validating(false); a.read(s1);
-			xml::document b; b.set_validating(false); b.read(s2);
+			xml::document a;
+			a.set_validating(false);
+			a.read(s1);
+
+			xml::document b;
+			b.set_validating(false);
+			b.read(s2);
 			
 			if (a == b)
 				++dubious_tests;
@@ -105,16 +101,6 @@ bool run_test(const xml::element& test, fs::path base_dir)
 	fs::path input(base_dir / test.get_attribute("URI"));
 	fs::path output(base_dir / test.get_attribute("OUTPUT"));
 
-	if (VERBOSE)
-	{
-		cout << "-----------------------------------------------" << endl
-			 << "ID: " << test.get_attribute("ID") << endl
-			 << "TYPE: " << test.get_attribute("TYPE") << endl
-			 << "FILE: " << fs::system_complete(input) << endl
-			 << test.content() << endl
-			 << endl;
-	}
-	
 	++total_tests;
 	
 	if (not fs::exists(input))
@@ -137,6 +123,8 @@ bool run_test(const xml::element& test, fs::path base_dir)
 	if (not is.is_open())
 		throw zeep::exception("test file not open");
 	
+	string error;
+	
 	try
 	{
 		fs::current_path(input.branch_path());
@@ -148,9 +136,9 @@ bool run_test(const xml::element& test, fs::path base_dir)
 			bool failed = false;
 			try
 			{
-				DOC doc;
+				xml::document doc;
 				doc.set_validating(test.get_attribute("TYPE") == "invalid");
-				is >> doc;
+				doc.read(is);
 				++should_have_failed;
 				result = false;
 				
@@ -192,8 +180,8 @@ bool run_test(const xml::element& test, fs::path base_dir)
 			bool failed = false;
 			try
 			{
-				DOC doc;
-				is >> doc;
+				xml::document doc;
+				doc.read(is);
 				++should_have_failed;
 				result = false;
 			}
@@ -214,17 +202,23 @@ bool run_test(const xml::element& test, fs::path base_dir)
 		if (test.get_attribute("TYPE") == "valid")
 			++error_tests;
 		result = false;
-		
-		if (VERBOSE)
+		error = e.what();
+	}
+
+	if (VERBOSE or result == false)
+	{
+		cout << "-----------------------------------------------" << endl
+			 << "ID:      " << test.get_attribute("ID") << endl
+			 << "TYPE:    " << test.get_attribute("TYPE") << endl
+			 << "FILE:    " << fs::system_complete(input) << endl
+			 << "SECTION: " << test.get_attribute("SECTIONS") << endl
+			 << "TYPE:    " << test.get_attribute("TYPE") << endl
+			 << test.content() << endl
+			 << endl;
+
+		if (result == false)
 		{
-			cout << "=======================================================" << endl
-				 << "test " << test.get_attribute("ID") << " failed:" << endl
-				 << test.content() << endl
-				 << endl
-				 << test.get_attribute("SECTIONS") << endl
-				 << test.get_attribute("TYPE") << endl
-				 << endl
-				 << "exception: " << e.what() << endl
+			cout << "exception: " << error << endl
 				 << endl;
 		}
 	}
@@ -280,7 +274,7 @@ void test_testcases(const fs::path& testFile, const string& id,
 
 	xml::document doc;
 	doc.set_validating(false);
-	file >> doc;
+	doc.read(file);
 
 	VERBOSE = saved_verbose;
 	TRACE = saved_trace;
@@ -299,9 +293,13 @@ int main(int argc, char* argv[])
 	    ("verbose", "verbose output")
 		("id", po::value<string>(), "ID for the test to run from the test suite")
 	    ("test", "Run SUN test suite")
+#if SOAP_XML_HAS_EXPAT_SUPPORT
+	    ("expat", "Use expat parser")
+#endif
 	    ("trace", "Trace productions in parser")
 	    ("type", po::value<string>(), "Type of test to run (valid|not-wf|invalid|error)")
 	    ("single", po::value<string>(), "Test a single XML file")
+	    ("print-ids", "Print the ID's of failed tests")
 	;
 	
 	po::positional_options_description p;
@@ -320,9 +318,16 @@ int main(int argc, char* argv[])
 	
 	VERBOSE = vm.count("verbose");
 	TRACE = vm.count("trace");
+
+	fs::path savedwd = fs::current_path();
 	
 	try
 	{
+#if SOAP_XML_HAS_EXPAT_SUPPORT
+		if (vm.count("expat"))
+			xml::document::set_parser_type(xml::parser_expat);
+#endif
+		
 		if (vm.count("single"))
 		{
 			fs::path path(vm["single"].as<string>());
@@ -333,41 +338,43 @@ int main(int argc, char* argv[])
 			fs::ifstream file(path);
 
 			run_valid_test(file, dir);
-			return 0;
 		}
-		
-		fs::path xmlconfFile("XML-Test-Suite/xmlconf/xmlconf.xml");
-		if (vm.count("test"))
-			xmlconfFile = vm["test"].as<string>();
-		
-		string id;
-		if (vm.count("id"))
-			id = vm["id"].as<string>();
-		
-		string type;
-		if (vm.count("type"))
-			type = vm["type"].as<string>();
-		
-		vector<string> failed_ids;
-		
-		test_testcases(xmlconfFile, id, type, failed_ids);
-		
-		cout << endl
-			 << "summary: " << endl
-			 << "  ran " << total_tests - skipped_tests << " out of " << total_tests << " tests" << endl
-			 << "  " << error_tests << " threw an exception" << endl
-			 << "  " << wrong_exception << " wrong exception" << endl
-			 << "  " << should_have_failed << " should have failed but didn't" << endl
-			 << "  " << dubious_tests << " had a dubious output" << endl;
-			
-		if (id.empty())
+		else
 		{
+			
+			fs::path xmlconfFile("XML-Test-Suite/xmlconf/xmlconf.xml");
+			if (vm.count("test"))
+				xmlconfFile = vm["test"].as<string>();
+			
+			string id;
+			if (vm.count("id"))
+				id = vm["id"].as<string>();
+			
+			string type;
+			if (vm.count("type"))
+				type = vm["type"].as<string>();
+			
+			vector<string> failed_ids;
+			
+			test_testcases(xmlconfFile, id, type, failed_ids);
+			
 			cout << endl
-				 << "ID's for the failed tests: " << endl;
-			
-			copy(failed_ids.begin(), failed_ids.end(), ostream_iterator<string>(cout, "\n"));
-			
-			cout << endl;
+				 << "summary: " << endl
+				 << "  ran " << total_tests - skipped_tests << " out of " << total_tests << " tests" << endl
+				 << "  " << error_tests << " threw an exception" << endl
+				 << "  " << wrong_exception << " wrong exception" << endl
+				 << "  " << should_have_failed << " should have failed but didn't" << endl
+				 << "  " << dubious_tests << " had a dubious output" << endl;
+
+			if (vm.count("print-ids"))
+			{
+				cout << endl
+					 << "ID's for the failed tests: " << endl;
+				
+				copy(failed_ids.begin(), failed_ids.end(), ostream_iterator<string>(cout, "\n"));
+				
+				cout << endl;
+			}
 		}
 	}
 	catch (std::exception& e)
@@ -375,6 +382,8 @@ int main(int argc, char* argv[])
 		cout << e.what() << endl;
 		return 1;
 	}
+	
+	fs::current_path(savedwd);
 	
 	return 0;
 }
