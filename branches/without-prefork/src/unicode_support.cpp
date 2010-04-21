@@ -40,25 +40,25 @@ bool is_name_start_char(wchar_t uc)
 bool is_name_char(wchar_t uc)
 {
 	return
-		is_name_start_char(uc) or
 		uc == '-' or
 		uc == '.' or
 		(uc >= '0' and uc <= '9') or
 		uc == 0x0B7 or
+		is_name_start_char(uc) or
 		(uc >= 0x00300 and uc <= 0x0036F) or
 		(uc >= 0x0203F and uc <= 0x02040);
 }
 
-bool is_char(wchar_t uc)
-{
-	return
-		uc == 0x09 or
-		uc == 0x0A or
-		uc == 0x0D or
-		(uc >= 0x020 and uc <= 0x0D7FF) or
-		(uc >= 0x0E000 and uc <= 0x0FFFD) or
-		(uc >= 0x010000 and uc <= 0x010FFFF);
-}
+//bool is_char(wchar_t uc)
+//{
+//	return
+//		uc == 0x09 or
+//		uc == 0x0A or
+//		uc == 0x0D or
+//		(uc >= 0x020 and uc <= 0x0D7FF) or
+//		(uc >= 0x0E000 and uc <= 0x0FFFD) or
+//		(uc >= 0x010000 and uc <= 0x010FFFF);
+//}
 
 bool is_valid_system_literal_char(wchar_t uc)
 {
@@ -79,6 +79,14 @@ bool is_valid_system_literal(const wstring& s)
 	return result;
 }
 
+bool is_valid_system_literal(const string& s)
+{
+	bool result = true;
+	for (string::const_iterator ch = s.begin(); result == true and ch != s.end(); ++ch)
+		result = is_valid_system_literal_char(*ch);
+	return result;
+}
+
 bool is_valid_public_id_char(wchar_t uc)
 {
 	return
@@ -92,6 +100,14 @@ bool is_valid_public_id(const wstring& s)
 {
 	bool result = true;
 	for (wstring::const_iterator ch = s.begin(); result == true and ch != s.end(); ++ch)
+		result = is_valid_public_id_char(*ch);
+	return result;
+}
+
+bool is_valid_public_id(const string& s)
+{
+	bool result = true;
+	for (string::const_iterator ch = s.begin(); result == true and ch != s.end(); ++ch)
 		result = is_valid_public_id_char(*ch);
 	return result;
 }
@@ -130,6 +146,7 @@ string wstring_to_string(const wstring& s)
 	
 	return result;
 }
+
 
 }
 }

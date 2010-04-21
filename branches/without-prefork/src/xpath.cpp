@@ -3,6 +3,8 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
+#include "zeep/config.hpp"
+
 #include <iostream>
 #include <sstream>
 #include <numeric>
@@ -24,8 +26,6 @@
 #include "zeep/xml/unicode_support.hpp"
 
 #include "zeep/xml/writer.hpp"
-
-#define nil NULL
 
 extern int VERBOSE;
 
@@ -307,7 +307,7 @@ const bool object::as<bool>() const
 	bool result;
 	switch (m_type)
 	{
-		case ot_number:		result = m_number != 0 and not isnan(m_number); break;
+		case ot_number:		result = m_number != 0 and not std::isnan(m_number); break;
 		case ot_node_set:	result = not m_node_set.empty(); break;
 		case ot_string:		result = not m_string.empty(); break;
 		case ot_boolean:	result = m_boolean; break;
