@@ -5,7 +5,6 @@
 configure: configure-stamp
 configure-stamp:
 	dh_testdir
-	
 	touch $@
 
 build: build-stamp
@@ -26,11 +25,11 @@ install: build
 	dh_testroot
 	dh_prep  
 	dh_installdirs
-	$(MAKE) -C work LIBDIR=$(CURDIR)/debian/libzeep2/usr/lib install-libs
+	$(MAKE) LIBDIR=$(CURDIR)/debian/libzeep2/usr/lib install-libs
 	$(MAKE) LIBDIR=$(CURDIR)/debian/libzeep-dev/usr/lib \
 			INCDIR=$(CURDIR)/debian/libzeep-dev/usr/include \
 			MANDIR=$(CURDIR)/debian/libzeep-dev/usr/share/man/man3 \
-			-C work install-dev
+			install-dev
 
 binary-indep: install
 
