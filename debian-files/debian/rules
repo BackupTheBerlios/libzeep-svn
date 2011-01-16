@@ -4,7 +4,7 @@ CFLAGS = $(shell dpkg-buildflags --get CFLAGS)
 LDFLAGS = $(shell dpkg-buildflags --get LDFLAGS)
 
 %:
-	dh $@ --parallel
+	dh $@
 
 override_dh_auto_build:
 	$(MAKE) DBF_CFLAGS="$(CFLAGS)" \
