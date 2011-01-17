@@ -1,10 +1,8 @@
 Dropped the making of libzeep.a since lintian complains about 'unstripped symbols'. Working around 
 this does not seem to be very useful since using the static version of libzeep requires quite some
 knowledge of linking static libraries anyway, things can too easily go wrong.
-Index: libzeep-2.0.1/makefile
-===================================================================
---- libzeep-2.0.1.orig/makefile	2011-01-17 14:37:35.000000000 +0100
-+++ libzeep-2.0.1/makefile	2011-01-17 14:23:20.000000000 +0100
+--- a/makefile
++++ b/makefile
 @@ -8,10 +8,6 @@
  # You may have to edit the first three defines on top of this
  # makefile to match your current installation.
