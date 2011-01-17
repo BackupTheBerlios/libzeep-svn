@@ -1,0 +1,65 @@
+Dropped the making of libzeep.a since lintian complains about 'unstripped symbols'. Working around 
+this does not seem to be very useful since using the static version of libzeep requires quite some
+knowledge of linking static libraries anyway, things can too easily go wrong.
+Index: libzeep-2.0.1/makefile
+===================================================================
+--- libzeep-2.0.1.orig/makefile	2011-01-17 14:37:35.000000000 +0100
++++ libzeep-2.0.1/makefile	2011-01-17 14:23:20.000000000 +0100
+@@ -8,10 +8,6 @@
+ # You may have to edit the first three defines on top of this
+ # makefile to match your current installation.
+ 
+-#BOOST_LIB_SUFFIX	= -mt				# Works for Ubuntu
+-#BOOST_LIB_DIR		= $(HOME)/projects/boost/lib
+-#BOOST_INC_DIR		= $(HOME)/projects/boost/include
+-
+ # debian dpkg-buildflags support
+ DBF_CFLAGS			?= -g -O2
+ DBF_LDFLAGS			?= 
+@@ -22,7 +18,7 @@
+ MANDIR				?= $(PREFIX)/man/man3
+ 
+ BOOST_LIBS			= system thread filesystem
+-BOOST_LIBS			:= $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
++BOOST_LIBS			:= $(BOOST_LIBS:%=boost_%)
+ LIBS				= $(BOOST_LIBS) stdc++ m pthread
+ LDFLAGS				+= $(BOOST_LIB_DIR:%=-L%) $(LIBS:%=-l%) -g
+ 
+@@ -57,10 +53,7 @@
+ 	obj/xpath.o \
+ 	obj/writer.o
+ 
+-lib: libzeep.a libzeep.so
+-
+-libzeep.a: $(OBJECTS)
+-	ld -r -o $@ $(OBJECTS)
++lib: libzeep.so
+ 
+ $(SO_NAME): $(LIB_NAME)
+ 	ln -fs $< $@
+@@ -72,8 +65,8 @@
+ 	ln -fs $< $@
+ 
+ # assuming zeep-test is build when install was not done already
+-zeep-test: zeep-test.cpp libzeep.a
+-	$(CC) -o $@ -I. zeep-test.cpp libzeep.a $(LDFLAGS)
++zeep-test: zeep-test.cpp libzeep.so
++	$(CC) -o $@ -I. zeep-test.cpp -L. -lzeep -Wl,-rpath=.
+ 
+ install-libs: libzeep.so
+ 	install -d $(LIBDIR)
+@@ -105,8 +98,6 @@
+ 	install zeep/exception.hpp $(INCDIR)/zeep/exception.hpp
+ 	install zeep/server.hpp $(INCDIR)/zeep/server.hpp
+ 	install doc/libzeep.3 $(MANDIR)/libzeep.3
+-	install ./libzeep.a $(LIBDIR)/libzeep.a
+-	strip -SX $(LIBDIR)/libzeep.a
+ 	ln -Tfs $(LIB_NAME) $(LIBDIR)/libzeep.so
+ 
+ install: install-libs install-dev
+@@ -127,4 +118,4 @@
+ $(OBJECTS:.o=.d):
+ 
+ clean:
+-	rm -rf obj/* libzeep.a libzeep.so $(SO_NAME) $(LIB_NAME) zeep-test $(DIST_NAME) $(DIST_NAME).tar.gz
++	rm -rf obj/* libzeep.so $(SO_NAME) $(LIB_NAME) zeep-test $(DIST_NAME) $(DIST_NAME).tar.gz
