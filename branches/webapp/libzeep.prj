@@ -57,7 +57,7 @@
     <target kind="Static Library">
       <name>zeep Release</name>
       <linkTarget>libzeep</linkTarget>
-      <compiler>/usr/bin/c++</compiler>
+      <compiler>/usr/bin/g++-4.5</compiler>
       <defines>
         <define>NDEBUG</define>
         <define>SOAP_XML_HAS_EXPAT_SUPPORT=0</define>
@@ -67,6 +67,7 @@
         <cflag>-pthread</cflag>
         <cflag>-gdwarf-2</cflag>
         <cflag>-fPIC</cflag>
+        <cflag>-std=c++0x</cflag>
       </cflags>
       <warnings>
         <warning>all</warning>
