@@ -551,23 +551,28 @@ void webapp::process_url(
 		{
 			string name = e->get_attribute("name");
 			string value = e->get_attribute("value");
+
 			process_el(scope, value);
-			parameters.add(name + '=' + value);
+
+			parameters.add(name, value);
 		}
 	}
 
-	string ps;
+	string url = (string)scope["baseuri"];
+
+	bool first = true;
 	foreach (auto p, parameters)
 	{
-		if (ps.empty())
-			ps += '?';
+		if (first)
+			url += '?';
 		else
-			ps += '&';
+			url += '&';
+		first = false;
 
-		ps += zeep::http::encode_url(p.first) + '=' + zeep::http::encode_url(p.second.as<string>());
+		url += zeep::http::encode_url(p.first) + '=' + zeep::http::encode_url(p.second.as<string>());
 	}
 	
-	scope.put(var, (string)scope["baseuri"] + ps);
+	scope.put(var, url);
 }
 
 void webapp::process_param(
@@ -708,6 +713,13 @@ void parameter_map::add(
 		value = param.substr(d + 1);
 	}
 	
+	add(name, value);
+}
+
+void parameter_map::add(
+	string		name,
+	string		value)
+{
 	name = decode_url(name);
 	if (not value.empty())
 		value = decode_url(value);

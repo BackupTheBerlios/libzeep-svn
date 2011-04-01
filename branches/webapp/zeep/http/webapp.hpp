@@ -58,6 +58,10 @@ class parameter_map : public std::map<std::string, parameter_value>
 	void		add(
 					const std::string&	param);
 
+	void		add(
+					std::string			name,
+					std::string			value);
+
 	template<class T>
 	const parameter_value&
 				get(
