@@ -77,6 +77,9 @@ class webapp : public http::server
 					webapp();
 	virtual			~webapp();
 
+	virtual void	set_docroot(
+						const fs::path&		path);
+	
   protected:
 	
 	virtual void	handle_request(
@@ -205,6 +208,7 @@ class webapp : public http::server
 	
 	handler_map		m_dispatch_table;
 	processor_map	m_processor_table;
+	fs::path		m_docroot;
 };
 
 template<class T>

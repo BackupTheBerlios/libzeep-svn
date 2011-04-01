@@ -8,6 +8,7 @@
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem/fstream.hpp>
 
 #include <zeep/http/webapp.hpp>
 #include <zeep/xml/unicode_support.hpp>
@@ -40,6 +41,12 @@ webapp::webapp()
 
 webapp::~webapp()
 {
+}
+
+void webapp::set_docroot(
+	const fs::path&		path)
+{
+	m_docroot = path;
 }
 
 void webapp::handle_request(
@@ -121,6 +128,16 @@ void webapp::handle_request(
 void webapp::mount(const std::string& path, handler_type handler)
 {
 	m_dispatch_table[path] = handler;
+}
+
+void webapp::load_template(
+	const std::string&	file,
+	xml::document&		doc)
+{
+	fs::ifstream data(m_docroot / file);
+	if (not data.is_open())
+		throw exception((boost::format("file not found: '%1%'") % (m_docroot / file)).str());
+	doc.read(data);
 }
 
 void webapp::create_reply_from_template(
