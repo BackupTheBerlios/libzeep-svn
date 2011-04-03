@@ -1120,11 +1120,6 @@ object& scope::lookup(
 		m_data[name] = object();
 		result = &m_data[name];
 	}
-	
-cerr << "lookup " << name << endl
-	 << *this << endl
-	 << "result => " << *result << endl
-	 << endl;
 	 
 	 return *result;
 }
