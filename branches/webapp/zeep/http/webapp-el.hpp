@@ -21,8 +21,75 @@ namespace el
 	
 typedef uint32	unicode;
 
-struct object
+class object
 {
+  public:
+					object();
+					object(const object& o);
+
+	explicit		object(const char* s);
+	explicit		object(const std::string& s);
+	explicit		object(double n);
+	explicit		object(int8 n);
+	explicit		object(uint8 n);
+	explicit		object(int16 n);
+	explicit		object(uint16 n);
+	explicit		object(int32 n);
+	explicit		object(uint32 n);
+	explicit		object(int64 n);
+	explicit		object(uint64 n);
+	explicit		object(bool b);
+	explicit		object(const std::vector<object>& a);
+
+	object&			operator=(const object& rhs);					
+	object&			operator=(const std::string& rhs);
+	object&			operator=(double rhs);
+	object&			operator=(bool rhs);
+
+	bool			empty() const;
+	bool			undefined() const;
+
+	bool			is_number() const;
+
+	bool			is_array() const;
+	uint32			count() const;
+
+					operator std::string() const;
+					operator double() const;
+					operator bool() const;
+	
+	object			operator[](const std::string& name) const;
+	object			operator[](const char* name) const;
+	object			operator[](uint32 ix) const;
+
+	object&			operator[](const std::string& name);
+	object&			operator[](const char* name);
+	object&			operator[](uint32 ix);
+
+	void			sort(const std::string& sort_field, bool descending);
+
+	friend std::ostream& operator<<(std::ostream& os, const object& o);
+	friend object operator<(const object& a, const object& b);
+	friend object operator<=(const object& a, const object& b);
+	friend object operator>=(const object& a, const object& b);
+	friend object operator>(const object& a, const object& b);
+	friend object operator!=(const object& a, const object& b);
+	friend object operator==(const object& a, const object& b);
+	friend object operator+(const object& a, const object& b);
+	friend object operator-(const object& a, const object& b);
+	friend object operator*(const object& a, const object& b);
+	friend object operator%(const object& a, const object& b);
+	friend object operator/(const object& a, const object& b);
+	friend object operator&&(const object& a, const object& b);
+	friend object operator||(const object& a, const object& b);
+	friend object operator-(const object& a);
+	
+	friend std::vector<object>::iterator range_begin(object& x);
+	friend std::vector<object>::iterator range_end(object& x);
+	friend std::vector<object>::const_iterator range_begin(object const& x);
+	friend std::vector<object>::const_iterator range_end(object const& x);
+
+  private:
 	enum object_type
 	{
 		ot_undef,
@@ -37,210 +104,31 @@ struct object
 	std::map<std::string,object>
 					m_fields;
 	std::vector<object>	m_array;
-	
-					object()					: m_type(ot_undef) {}
-					object(const object& o)
-						: m_type(o.m_type)
-					{
-						switch (m_type)
-						{
-							case ot_string:		m_string = o.m_string; break;
-							case ot_boolean:
-							case ot_number:		m_number = o.m_number; break;
-							case ot_struct:		m_fields = o.m_fields; break;
-							case ot_array:		m_array = o.m_array;
-							default:			break;
-						}
-					}
-
-	explicit		object(const char* s)		: m_type(ot_string), m_string(s ? s : "") {}
-	explicit		object(const std::string& s)		: m_type(ot_string), m_string(s) {}
-	explicit		object(double n)			: m_type(ot_number), m_number(n) {}
-	explicit		object(int8 n)				: m_type(ot_number), m_number(n) {}
-	explicit		object(uint8 n)				: m_type(ot_number), m_number(n) {}
-	explicit		object(int16 n)				: m_type(ot_number), m_number(n) {}
-	explicit		object(uint16 n)			: m_type(ot_number), m_number(n) {}
-	explicit		object(int32 n)				: m_type(ot_number), m_number(n) {}
-	explicit		object(uint32 n)			: m_type(ot_number), m_number(n) {}
-	explicit		object(int64 n)				: m_type(ot_number), m_number(n) {}
-	explicit		object(uint64 n)			: m_type(ot_number), m_number(n) {}
-	explicit		object(bool b)				: m_type(ot_boolean), m_number(b) {}
-	explicit		object(const std::vector<object>& a)
-												: m_type(ot_array), m_array(a) {}
-
-					object(object_type type)	: m_type(type) {}
-
-	bool			empty() const
-					{
-						bool result = false;
-						switch (m_type)
-						{
-							case ot_string:		result = m_string.empty(); break;
-							case ot_array:		result = m_array.empty(); break;
-							case ot_undef:		result = true; break;
-							default:			break;
-						}
-						return result;
-					}
-
-	object&			operator=(const object& rhs)
-					{
-						m_type = rhs.m_type;
-						switch (m_type)
-						{
-							case ot_string:		m_string = rhs.m_string; break;
-							case ot_boolean:
-							case ot_number:		m_number = rhs.m_number; break;
-							case ot_struct:		m_fields = rhs.m_fields; break;
-							case ot_array:		m_array = rhs.m_array;
-							default:			break;
-						}
-						return *this;
-					}
-					
-	object&			operator=(const std::string& rhs)
-					{
-						try
-						{
-							m_number = boost::lexical_cast<double>(rhs);
-							m_type = ot_number;
-						}
-						catch (...)
-						{
-							m_string = rhs;
-							m_type = ot_string;
-						}
-
-						return *this;
-					}
-					
-	object&			operator=(double rhs)
-					{
-						m_type = ot_number;
-						m_number = rhs;
-						return *this;
-					}
-
-	object&			operator=(bool rhs)
-					{
-						m_type = ot_boolean;
-						m_number = rhs;
-						return *this;
-					}
-
-					operator std::string() const
-					{
-						std::string result;
-						switch (m_type)
-						{
-							case ot_number:		result = boost::lexical_cast<std::string>(m_number); break;
-							case ot_string:		result = m_string; break;
-							case ot_boolean:	result = m_number ? "true" : "false"; break;
-							default:			break;
-						}
-						return result;
-					}
-					
-					operator double() const
-					{
-						double result;
-						switch (m_type)
-						{
-							case ot_boolean:
-							case ot_number:		result = m_number; break;
-							case ot_string:		result = boost::lexical_cast<double>(m_string); break;
-							default:			throw zeep::exception("object is not a number");
-						}
-						return result;
-					}
-
-					operator bool() const
-					{
-						bool result;
-						switch (m_type)
-						{
-							case ot_boolean:
-							case ot_number:		result = m_number != 0; break;
-							case ot_string:		result = not m_string.empty(); break;
-							case ot_array:		result = not m_array.empty(); break;
-							case ot_struct:		result = not m_fields.empty(); break;
-							default:			result = false; break;
-						}
-						return result;
-					}
-	
-	object			operator[](
-						const std::string& name) const
-					{
-						std::map<std::string,object>::const_iterator i = m_fields.find(name);
-						if (i == m_fields.end())
-							throw zeep::exception((boost::format("field %1% not found") % name).str());
-						return i->second;
-					}
-
-	object			operator[](
-						const char* name) const
-					{
-						return operator[](std::string(name));
-					}
-
-	object&			operator[](
-						const std::string& name)
-					{
-						m_type = ot_struct;
-						return m_fields[name];
-					}
-
-	object&			operator[](
-						const char* name)
-					{
-						return operator[](std::string(name));
-					}
-
-	struct compare_object
-	{
-					compare_object(const std::string& field, bool descending) : m_field(field), m_descending(descending) {}
-		
-		bool		operator()(const object& a, const object& b) const;
-		
-		std::string		m_field;
-		bool		m_descending;
-	};
-
-	void			sort(const std::string& sort_field, bool descending)
-					{
-						if (m_type == ot_array)
-							std::sort(m_array.begin(), m_array.end(), compare_object(sort_field, descending));
-					}
-
 };
 
-template<class S>
-S& operator<<(S& os, const object& o)
+// boost foreach support
+inline std::vector<object>::iterator range_begin(object& x)
 {
-	switch (o.m_type)
-	{
-		case object::ot_undef:		os << "undef"; break;
-		case object::ot_number:		os << "number(" << o.m_number << ")"; break;
-		case object::ot_string:		os << "string(" << o.m_string << ")"; break;
-		case object::ot_struct:
-			os << "struct(";
-			for (std::map<std::string,object>::const_iterator fi = o.m_fields.begin(); fi != o.m_fields.end(); ++fi)
-				os << fi->first << ':' << fi->second << ", ";
-			os << ")";
-			break;
-		case object::ot_array:
-			os << "array[";
-			BOOST_FOREACH (const object& f, o.m_array)
-				os << f << ", ";
-			os << "]";
-			break;
-		case object::ot_boolean:	os << "bool(" << (o.m_number ? "true)" : "false)"); break;
-	}
-	
-	return os;
+    return x.m_array.begin();
 }
 
+inline std::vector<object>::iterator range_end(object& x)
+{
+    return x.m_array.end();
+}
+
+inline std::vector<object>::const_iterator range_begin(object const& x)
+{
+    return x.m_array.begin();
+}
+
+inline std::vector<object>::const_iterator range_end(object const& x)
+{
+    return x.m_array.end();
+}
+
+
+std::ostream& operator<<(std::ostream& os, const object& o);
 object operator<(const object& a, const object& b);
 object operator<=(const object& a, const object& b);
 object operator>=(const object& a, const object& b);
@@ -256,57 +144,31 @@ object operator&&(const object& a, const object& b);
 object operator||(const object& a, const object& b);
 object operator-(const object& a);
 
-struct scope
+class scope
 {
-					scope(
-						const scope&	next)
-						: m_next(const_cast<scope*>(&next))
-						, m_req(nil) {}
-
-					scope(
-						scope*			next = nil)
-						: m_next(next)
-						, m_req(nil) {}
-
+  public:
+					scope(const request& req);
+	explicit		scope(const scope& next);
 
 	template<typename T>
-	void			put(
-						const std::string&	name,
-						const T&		value);
+	void			put(const std::string& name, const T& value);
 
 	template<typename T>
-	void			put(
-						const std::string&	name,
-						T*				begin,
-						T*				end);
+	void			put(const std::string& name, T* begin, T* end);
 
-	object&			lookup(
-						const std::string&	name)
-					{
-						std::map<std::string,object>::iterator i = m_data.find(name);
-						if (i != m_data.end())
-							return i->second;
-						else if (m_next != nil)
-							return m_next->lookup(name);
-						
-						static object s_undef;
-						return s_undef;
-					}
+	const object&	lookup(const std::string& name) const;
+	const object&	operator[](const std::string& name) const;
 
-	object&			operator[](
-						const std::string& name)
-					{
-						return lookup(name);
-					}
+	object&			lookup(const std::string& name);
+	object&			operator[](const std::string& name);
 
-	const request&	get_request() const
-					{
-						if (m_next)
-							return m_next->get_request();
-						if (m_req == nil)
-							throw zeep::exception("Invalid scope, no request");
-						return *m_req;
-					}
+	const request&	get_request() const;
+
+  private:
+
+	friend std::ostream& operator<<(std::ostream& lhs, const scope& rhs);
+
+	scope&			operator=(const scope&);
 
 	std::map<std::string,object>
 					m_data;
@@ -350,7 +212,7 @@ void scope::put(
 struct interpreter
 {
 					interpreter(
-						scope&			scope)
+						const scope&			scope)
 						: m_scope(scope) {}
 
 	template<class OutputIterator, class Match>
@@ -380,7 +242,7 @@ struct interpreter
 	object			parse_unary_expr();				// ('-')? primary_expr
 	object			parse_primary_expr();			// '(' expr ')' | number | string
 	
-	scope&			m_scope;
+	const scope&	m_scope;
 	uint32			m_lookahead;
 	std::string		m_token_string;
 	double			m_token_number;
@@ -403,4 +265,21 @@ OutputIterator interpreter::operator()(Match& m, OutputIterator out, boost::rege
 
 }
 }
+}
+
+// enable foreach (.., array object)
+namespace boost
+{
+    // specialize range_mutable_iterator and range_const_iterator in namespace boost
+    template<>
+    struct range_mutable_iterator<zeep::http::el::object>
+    {
+        typedef std::vector<zeep::http::el::object>::iterator type;
+    };
+
+    template<>
+    struct range_const_iterator<zeep::http::el::object>
+    {
+        typedef std::vector<zeep::http::el::object>::const_iterator type;
+    };
 }

@@ -18,7 +18,311 @@ using namespace std;
 namespace ba = boost::algorithm;
 
 namespace zeep { namespace http { namespace el {
+
+object::object()
+	: m_type(ot_undef)
+{
+}
+
+object::object(const object& o)
+	: m_type(o.m_type)
+{
+	switch (m_type)
+	{
+		case ot_string:		m_string = o.m_string; break;
+		case ot_boolean:
+		case ot_number:		m_number = o.m_number; break;
+		case ot_struct:		m_fields = o.m_fields; break;
+		case ot_array:		m_array = o.m_array;
+		default:			break;
+	}
+}
+
+object::object(const char* s)
+	: m_type(ot_string)
+	, m_string(s ? s : "")
+{
+}
+
+object::object(const std::string& s)
+	: m_type(ot_string)
+	, m_string(s)
+{
+}
+
+object::object(double n)
+	: m_type(ot_number)
+	, m_number(n)
+{
+}
+
+object::object(int8 n)
+	: m_type(ot_number)
+	, m_number(n)
+{
+}
+
+object::object(uint8 n)
+	: m_type(ot_number)
+	, m_number(n)
+{
+}
+
+object::object(int16 n)
+	: m_type(ot_number)
+	, m_number(n)
+{
+}
+
+object::object(uint16 n)
+	: m_type(ot_number)
+	, m_number(n)
+{
+}
+
+object::object(int32 n)
+	: m_type(ot_number)
+	, m_number(n)
+{
+}
+
+object::object(uint32 n)
+	: m_type(ot_number)
+	, m_number(n)
+{
+}
+
+object::object(int64 n)
+	: m_type(ot_number)
+	, m_number(n)
+{
+}
+
+object::object(uint64 n)
+	: m_type(ot_number)
+	, m_number(n)
+{
+}
+
+object::object(bool b)
+	: m_type(ot_boolean)
+	, m_number(b)
+{
+}
+
+object::object(const std::vector<object>& a)
+	: m_type(ot_array)
+	, m_array(a)
+{
+}
+
+//object::object(object_type type)
+//	: m_type(type)
+//{
+//}
+
+bool object::empty() const
+{
+	bool result = false;
+	switch (m_type)
+	{
+		case ot_string:		result = m_string.empty(); break;
+		case ot_array:		result = m_array.empty(); break;
+		case ot_undef:		result = true; break;
+		default:			break;
+	}
+	return result;
+}
+
+bool object::undefined() const
+{
+	return m_type == ot_undef;
+}
+
+bool object::is_array() const
+{
+	return m_type == ot_array;
+}
+
+uint32 object::count() const
+{
+	return m_type == ot_array ? m_array.size() : 0;
+}
+
+bool object::is_number() const
+{
+	return m_type == ot_number;
+}
+
+object& object::operator=(const object& rhs)
+{
+	m_type = rhs.m_type;
+	switch (m_type)
+	{
+		case ot_string:		m_string = rhs.m_string; break;
+		case ot_boolean:
+		case ot_number:		m_number = rhs.m_number; break;
+		case ot_struct:		m_fields = rhs.m_fields; break;
+		case ot_array:		m_array = rhs.m_array;
+		default:			break;
+	}
+	return *this;
+}
+
+object& object::operator=(const std::string& rhs)
+{
+	try
+	{
+		m_number = boost::lexical_cast<double>(rhs);
+		m_type = ot_number;
+	}
+	catch (...)
+	{
+		m_string = rhs;
+		m_type = ot_string;
+	}
+
+	return *this;
+}
+
+object& object::operator=(double rhs)
+{
+	m_type = ot_number;
+	m_number = rhs;
+	return *this;
+}
+
+object& object::operator=(bool rhs)
+{
+	m_type = ot_boolean;
+	m_number = rhs;
+	return *this;
+}
+
+object::operator std::string() const
+{
+	std::string result;
+	switch (m_type)
+	{
+		case ot_number:		result = boost::lexical_cast<std::string>(m_number); break;
+		case ot_string:		result = m_string; break;
+		case ot_boolean:	result = m_number ? "true" : "false"; break;
+		default:			break;
+	}
+	return result;
+}
+
+object::operator double() const
+{
+	double result;
+	switch (m_type)
+	{
+		case ot_boolean:
+		case ot_number:		result = m_number; break;
+		case ot_string:		result = boost::lexical_cast<double>(m_string); break;
+		default:			throw zeep::exception("object is not a number");
+	}
+	return result;
+}
+
+object::operator bool() const
+{
+	bool result;
+	switch (m_type)
+	{
+		case ot_boolean:
+		case ot_number:		result = m_number != 0; break;
+		case ot_string:		result = not m_string.empty(); break;
+		case ot_array:		result = not m_array.empty(); break;
+		case ot_struct:		result = not m_fields.empty(); break;
+		default:			result = false; break;
+	}
+	return result;
+}
+
+object object::operator[](
+	const std::string& name) const
+{
+	std::map<std::string,object>::const_iterator i = m_fields.find(name);
+	if (i == m_fields.end())
+		throw zeep::exception((boost::format("field %1% not found") % name).str());
+	return i->second;
+}
+
+object object::operator[](
+	const char* name) const
+{
+	return operator[](std::string(name));
+}
+
+object object::operator[](uint32 ix) const
+{
+	return m_array[ix];
+}
+
+object& object::operator[](
+	const std::string& name)
+{
+	m_type = ot_struct;
+	return m_fields[name];
+}
+
+object& object::operator[](
+	const char* name)
+{
+	return operator[](std::string(name));
+}
+
+object& object::operator[](uint32 ix)
+{
+	return m_array[ix];
+}
+
+struct compare_object
+{
+	compare_object(const std::string& field, bool descending)
+		: m_field(field)
+		, m_descending(descending)
+	{
+	}
 	
+	bool		operator()(const object& a, const object& b) const;
+
+	std::string		m_field;
+	bool		m_descending;
+};
+
+void object::sort(const std::string& sort_field, bool descending)
+{
+	if (m_type == ot_array)
+		std::sort(m_array.begin(), m_array.end(), compare_object(sort_field, descending));
+}
+
+ostream& operator<<(ostream& os, const object& o)
+{
+	switch (o.m_type)
+	{
+		case object::ot_undef:		os << "undef"; break;
+		case object::ot_number:		os << "number(" << o.m_number << ")"; break;
+		case object::ot_string:		os << "string(" << o.m_string << ")"; break;
+		case object::ot_struct:
+			os << "struct(";
+			for (std::map<std::string,object>::const_iterator fi = o.m_fields.begin(); fi != o.m_fields.end(); ++fi)
+				os << fi->first << ':' << fi->second << ", ";
+			os << ")";
+			break;
+		case object::ot_array:
+			os << "array[";
+			BOOST_FOREACH (const object& f, o.m_array)
+				os << f << ", ";
+			os << "]";
+			break;
+		case object::ot_boolean:	os << "bool(" << (o.m_number ? "true)" : "false)"); break;
+	}
+	
+	return os;
+}
+
 object operator<(const object& a, const object& b)
 {
 //cerr << endl << __func__ << " a = " << a << " b = " << b << endl;
@@ -236,7 +540,7 @@ object operator-(const object& a)
 	return object(-a.m_number);
 }
 
-bool object::compare_object::operator()(const object& a, const object& b) const
+bool compare_object::operator()(const object& a, const object& b) const
 {
 	if (m_descending)
 		return b[m_field] < a[m_field];
@@ -717,8 +1021,8 @@ object interpreter::parse_primary_expr()
 				if (m_lookahead == elt_dot)
 				{
 					match(m_lookahead);
-					if (result.m_type == object::ot_array and m_token_string == "count")
-						result = el::object(result.m_array.size());
+					if (result.is_array() and m_token_string == "count")
+						result = el::object(result.count());
 					else
 						result = result[m_token_string];
 					match(elt_object);
@@ -733,10 +1037,7 @@ object interpreter::parse_primary_expr()
 					match(elt_number);
 					match(elt_rbracket);
 					
-					if (result.m_type == object::ot_array and index < result.m_array.size())
-						result = result.m_array[index];
-					else
-						result = object();
+					result = result[index];
 					continue;
 				}
 
@@ -767,6 +1068,75 @@ ostream& operator<<(ostream& lhs, const scope& rhs)
 	return lhs;
 }
 
+scope::scope(const scope& next)
+	: m_next(const_cast<scope*>(&next))
+	, m_req(nil)
+{
+}
+
+scope::scope(const request& req)
+	: m_next(nil)
+	, m_req(&req)
+{
+}
+
+object& scope::operator[](
+	const std::string& name)
+{
+	return lookup(name);
+}
+
+const object& scope::lookup(
+	const std::string&	name) const
+{
+	std::map<std::string,object>::const_iterator i = m_data.find(name);
+	if (i != m_data.end())
+		return i->second;
+	else if (m_next != nil)
+		return m_next->lookup(name);
+	
+	static object s_null;
+	return s_null;
+}
+
+const object& scope::operator[](
+	const std::string& name) const
+{
+	return lookup(name);
+}
+
+object& scope::lookup(
+	const std::string&	name)
+{
+	object* result = nil;
+
+	std::map<std::string,object>::iterator i = m_data.find(name);
+	if (i != m_data.end())
+		result = &i->second;
+	else if (m_next != nil)
+		result = &m_next->lookup(name);
+	else
+	{
+		m_data[name] = object();
+		result = &m_data[name];
+	}
+	
+cerr << "lookup " << name << endl
+	 << *this << endl
+	 << "result => " << *result << endl
+	 << endl;
+	 
+	 return *result;
+}
+
+const request& scope::get_request() const
+{
+	if (m_next)
+		return m_next->get_request();
+	if (m_req == nil)
+		throw zeep::exception("Invalid scope, no request");
+	return *m_req;
+}
 
 }
 }

@@ -19,12 +19,14 @@ namespace ba = boost::algorithm;
 
 namespace zeep { namespace http {
 
-const std::string kLibZeepWebAppNS = "http://www.hekkelman.com/ns/webapp";
-
 // --------------------------------------------------------------------
 //
 
-webapp::webapp()
+webapp::webapp(
+	const std::string&	ns,
+	const fs::path&		docroot)
+	: m_ns(ns)
+	, m_docroot(docroot)
 {
 	m_processor_table["include"] =	boost::bind(&webapp::process_include, this, _1, _2, _3);
 	m_processor_table["if"] =		boost::bind(&webapp::process_if, this, _1, _2, _3);
@@ -95,14 +97,13 @@ void webapp::handle_request(
 			action.erase(s, string::npos);
 		
 		// set up the scope by putting some globals in it
-		el::scope scope;
-		scope.m_req = &req;
-		scope["action"] = el::object(action);
-		scope["uri"] = el::object(uri);
+		el::scope scope(req);
+		scope.put("action", el::object(action));
+		scope.put("uri", el::object(uri));
 		s = uri.find('?');
 		if (s != string::npos)
 			uri.erase(s, string::npos);
-		scope["baseuri"] = uri;
+		scope.put("baseuri", uri);
 		
 		init_scope(scope);
 		
@@ -118,7 +119,7 @@ void webapp::handle_request(
 	}
 	catch (std::exception& e)
 	{
-		el::scope scope;
+		el::scope scope(req);
 		scope.put("errormsg", el::object(e.what()));
 
 		create_reply_from_template("error.html", scope, rep);
@@ -142,7 +143,7 @@ void webapp::load_template(
 
 void webapp::create_reply_from_template(
 	const std::string&	file,
-	el::scope&			scope,
+	const el::scope&	scope,
 	reply&				reply)
 {
 	xml::document doc;
@@ -157,7 +158,7 @@ void webapp::create_reply_from_template(
 
 void webapp::process_xml(
 	xml::node*			node,
-	el::scope&			scope,
+	const el::scope&	scope,
 	fs::path			dir)
 {
 	xml::text* text = dynamic_cast<xml::text*>(node);
@@ -175,7 +176,7 @@ void webapp::process_xml(
 		return;
 	
 	// if node is one of our special nodes, we treat it here
-	if (e->ns() == kLibZeepWebAppNS)
+	if (e->ns() == m_ns)
 	{
 		xml::container* parent = e->parent();
 
@@ -240,7 +241,7 @@ void webapp::add_processor(
 
 void webapp::process_include(
 	xml::element*		node,
-	el::scope&			scope,
+	const el::scope&	scope,
 	fs::path			dir)
 {
 	// an include directive, load file and include resulting content
@@ -265,7 +266,7 @@ void webapp::process_include(
 
 void webapp::process_if(
 	xml::element*		node,
-	el::scope&			scope,
+	const el::scope&	scope,
 	fs::path			dir)
 {
 	string test = node->get_attribute("test");
@@ -286,20 +287,20 @@ void webapp::process_if(
 
 void webapp::process_iterate(
 	xml::element*		node,
-	el::scope&			scope,
+	const el::scope&	scope,
 	fs::path			dir)
 {
 	el::object collection = scope[node->get_attribute("collection")];
-	if (collection.m_type == el::object::ot_undef)
+	if (collection.undefined())
 		evaluate_el(scope, node->get_attribute("collection"), collection);
 	
-	if (collection.m_type == el::object::ot_array and not collection.m_array.empty())
+	if (collection.is_array() and not collection.empty())
 	{
 		string var = node->get_attribute("var");
 		if (var.empty())
 			throw exception("missing var attribute in mrs:iterate");
 	
-		foreach (el::object& o, collection.m_array)
+		foreach (el::object& o, collection)
 		{
 			el::scope s(scope);
 			s.put(var, o);
@@ -320,23 +321,23 @@ void webapp::process_iterate(
 
 void webapp::process_for(
 	xml::element*		node,
-	el::scope&			scope,
+	const el::scope&	scope,
 	fs::path			dir)
 {
 	el::object b, e;
 	
 	evaluate_el(scope, node->get_attribute("begin"), b);
-	if (b.m_type != el::object::ot_number)
+	if (not b.is_number())
 		throw exception("begin is not a number in mrs:for");
 	evaluate_el(scope, node->get_attribute("end"), e);
-	if (e.m_type != el::object::ot_number)
+	if (not e.is_number())
 		throw exception("end is not a number in mrs:for");
 	
 	string var = node->get_attribute("var");
 	if (var.empty())
 		throw exception("missing var attribute in mrs:iterate");
 
-	for (int32 i = static_cast<int32>(b.m_number); i <= static_cast<int32>(e.m_number); ++i)
+	for (int32 i = (double)b; i <= (double)e; ++i)
 	{
 		el::scope s(scope);
 		s.put(var, el::object(i));
@@ -363,7 +364,7 @@ class with_thousands : public numpunct<char>
 
 void webapp::process_number(
 	xml::element*		node,
-	el::scope&			scope,
+	const el::scope&	scope,
 	fs::path			dir)
 {
 	string number = node->get_attribute("n");
@@ -373,7 +374,7 @@ void webapp::process_number(
 	{
 		el::object n;
 		evaluate_el(scope, number, n);
-		if (n.m_type == el::object::ot_number)
+		if (n.is_number())
 		{
 			int base = 0;
 			char kBase[] = { 'B', 'K', 'M', 'G', 'T', 'P', 'E' };		// whatever
@@ -401,7 +402,7 @@ void webapp::process_number(
 	{
 		el::object n;
 		evaluate_el(scope, number, n);
-		if (n.m_type == el::object::ot_number)
+		if (n.is_number())
 		{
 			uint64 nr = floor((double)n + 0.5);
 			
@@ -424,14 +425,14 @@ void webapp::process_number(
 
 void webapp::process_options(
 	xml::element*		node,
-	el::scope&			scope,
+	const el::scope&	scope,
 	fs::path			dir)
 {
 	el::object collection = scope[node->get_attribute("collection")];
-	if (collection.m_type == el::object::ot_undef)
+	if (collection.undefined())
 		evaluate_el(scope, node->get_attribute("collection"), collection);
 	
-	if (collection.m_type == el::object::ot_array and not collection.m_array.empty())
+	if (collection.is_array() and not collection.empty())
 	{
 		string value = node->get_attribute("value");
 		string label = node->get_attribute("label");
@@ -444,7 +445,7 @@ void webapp::process_options(
 			selected = (string)o;
 		}
 		
-		foreach (el::object& o, collection.m_array)
+		foreach (el::object& o, collection)
 		{
 			zeep::xml::element* option = new zeep::xml::element("option");
 	
@@ -472,14 +473,14 @@ void webapp::process_options(
 
 void webapp::process_option(
 	xml::element*		node,
-	el::scope&			scope,
+	const el::scope&	scope,
 	fs::path			dir)
 {
 	el::object collection = scope[node->get_attribute("collection")];
-	if (collection.m_type == el::object::ot_undef)
+	if (collection.undefined())
 		evaluate_el(scope, node->get_attribute("collection"), collection);
 	
-	if (collection.m_type == el::object::ot_array and not collection.m_array.empty())
+	if (collection.is_array() and not collection.empty())
 	{
 		string value = node->get_attribute("value");
 		string label = node->get_attribute("label");
@@ -492,7 +493,7 @@ void webapp::process_option(
 			selected = (string)o;
 		}
 		
-		foreach (el::object& o, collection.m_array)
+		foreach (el::object& o, collection)
 		{
 			zeep::xml::element* option = new zeep::xml::element("option");
 	
@@ -520,7 +521,7 @@ void webapp::process_option(
 
 void webapp::process_checkbox(
 	xml::element*		node,
-	el::scope&			scope,
+	const el::scope&	scope,
 	fs::path			dir)
 {
 	string name = node->get_attribute("name");
@@ -554,7 +555,7 @@ void webapp::process_checkbox(
 
 void webapp::process_url(
 	xml::element*		node,
-	el::scope&			scope,
+	const el::scope&	scope,
 	fs::path			dir)
 {
 	string var = node->get_attribute("var");
@@ -564,7 +565,7 @@ void webapp::process_url(
 	
 	foreach (zeep::xml::element* e, *node)
 	{
-		if (e->ns() == kLibZeepWebAppNS and e->name() == "param")
+		if (e->ns() == m_ns and e->name() == "param")
 		{
 			string name = e->get_attribute("name");
 			string value = e->get_attribute("value");
@@ -589,12 +590,13 @@ void webapp::process_url(
 		url += zeep::http::encode_url(p.first) + '=' + zeep::http::encode_url(p.second.as<string>());
 	}
 	
-	scope.put(var, url);
+	el::scope& s(const_cast<el::scope&>(scope));
+	s.put(var, url);
 }
 
 void webapp::process_param(
 	xml::element*		node,
-	el::scope&			scope,
+	const el::scope&	scope,
 	fs::path			dir)
 {
 	throw exception("Invalid XML, cannot have a stand-alone mrs:param element");
@@ -602,7 +604,7 @@ void webapp::process_param(
 
 void webapp::process_embed(
 	xml::element*		node,
-	el::scope&			scope,
+	const el::scope&	scope,
 	fs::path			dir)
 {
 	// an embed directive, load xml from attribute and include parsed content
@@ -625,7 +627,7 @@ void webapp::process_embed(
 }
 
 bool webapp::process_el(
-	el::scope&					scope,
+	const el::scope&			scope,
 	string&						text)
 {
 	static const boost::regex re("\\$\\{([^}]+)\\}");
@@ -649,7 +651,7 @@ bool webapp::process_el(
 }
 
 void webapp::evaluate_el(
-	el::scope&					scope,
+	const el::scope&			scope,
 	const string&				text,
 	el::object&					result)
 {
@@ -665,7 +667,7 @@ void webapp::evaluate_el(
 }
 
 bool webapp::evaluate_el(
-	el::scope&					scope,
+	const el::scope&			scope,
 	const string&				text)
 {
 	el::object result;
@@ -704,13 +706,22 @@ void webapp::get_parameters(
 	parameter_map&		parameters)
 {
 	const request& req = scope.get_request();
-	if (not req.payload.empty())
+	
+	string ps;
+	
+	if (req.method == "POST")
+		ps = req.payload;
+	else if (req.method == "GET" or req.method == "PUT")
 	{
-		for (ba::split_iterator<string::const_iterator> i = ba::make_split_iterator(req.payload, ba::first_finder("&"));
-			i != ba::split_iterator<string::const_iterator>(); ++i)
-		{
-			parameters.add(string(i->begin(), i->end()));
-		}
+		string::size_type d = req.uri.find('?');
+		if (d != string::npos)
+			ps = req.uri.substr(d + 1);
+	}
+
+	for (ba::split_iterator<string::iterator> i = ba::make_split_iterator(ps, ba::first_finder("&"));
+		i != ba::split_iterator<string::iterator>(); ++i)
+	{
+		parameters.add(string(i->begin(), i->end()));
 	}
 }
 

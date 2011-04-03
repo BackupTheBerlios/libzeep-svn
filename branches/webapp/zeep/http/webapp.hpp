@@ -74,11 +74,17 @@ extern const std::string kLibZeepWebAppNS;
 class webapp : public http::server
 {
   public:
-					webapp();
+					// first parameter to constructor is the
+					// namespace to use in template XHTML files.
+					webapp(
+						const std::string&	ns,
+						const fs::path&		docroot = ".");
+
 	virtual			~webapp();
 
 	virtual void	set_docroot(
-						const fs::path&		path);
+						const fs::path&		docroot);
+	fs::path		get_docroot() const		{ return m_docroot; }
 	
   protected:
 	
@@ -88,14 +94,14 @@ class webapp : public http::server
 
 	// webapp works with 'handlers' that are methods 'mounted' on a path in the requested URI
 	
-	typedef boost::function<void(const request& request, el::scope& scope, reply& reply)> handler_type;
+	typedef boost::function<void(const request& request, const el::scope& scope, reply& reply)> handler_type;
 
 	void			mount(const std::string& path, handler_type handler);
 
 	// Use load_template to fetch the XHTML template file
 	virtual void	load_template(
 						const std::string&	file,
-						xml::document&		doc) = 0;
+						xml::document&		doc);
 
 	void			load_template(
 						const fs::path&		file,
@@ -107,16 +113,16 @@ class webapp : public http::server
 	// create a reply based on a template
 	virtual void	create_reply_from_template(
 						const std::string&	file,
-						el::scope&			scope,
+						const el::scope&	scope,
 						reply&				reply);
 	
 	// process xml parses the XHTML and fills in the special tags and evaluates the el constructs
 	virtual void	process_xml(
 						xml::node*			node,
-						el::scope&			scope,
+						const el::scope&	scope,
 						fs::path			dir);
 
-	typedef boost::function<void(xml::element* node, el::scope& scope, fs::path dir)> processor_type;
+	typedef boost::function<void(xml::element* node, const el::scope& scope, fs::path dir)> processor_type;
 
 	virtual void	add_processor(
 						const std::string&	name,
@@ -124,71 +130,71 @@ class webapp : public http::server
 
 	virtual void	process_include(
 						xml::element*		node,
-						el::scope&			scope,
+						const el::scope&	scope,
 						fs::path			dir);
 
 	virtual void	process_if(
 						xml::element*		node,
-						el::scope&			scope,
+						const el::scope&	scope,
 						fs::path			dir);
 
 	virtual void	process_iterate(
 						xml::element*		node,
-						el::scope&			scope,
+						const el::scope&	scope,
 						fs::path			dir);
 
 	virtual void	process_for(
 						xml::element*		node,
-						el::scope&			scope,
+						const el::scope&	scope,
 						fs::path			dir);
 
 	virtual void	process_number(
 						xml::element*		node,
-						el::scope&			scope,
+						const el::scope&	scope,
 						fs::path			dir);
 
 	virtual void	process_options(
 						xml::element*		node,
-						el::scope&			scope,
+						const el::scope&	scope,
 						fs::path			dir);
 
 	virtual void	process_option(
 						xml::element*		node,
-						el::scope&			scope,
+						const el::scope&	scope,
 						fs::path			dir);
 
 	virtual void	process_checkbox(
 						xml::element*		node,
-						el::scope&			scope,
+						const el::scope&	scope,
 						fs::path			dir);
 
 	virtual void	process_url(
 						xml::element*		node,
-						el::scope&			scope,
+						const el::scope&	scope,
 						fs::path			dir);
 
 	virtual void	process_param(
 						xml::element*		node,
-						el::scope&			scope,
+						const el::scope&	scope,
 						fs::path			dir);
 
 	virtual void	process_embed(
 						xml::element*		node,
-						el::scope&			scope,
+						const el::scope&	scope,
 						fs::path			dir);
 
 	// expression language support
 	virtual bool	process_el(
-						el::scope&			scope,
+						const el::scope&	scope,
 						std::string&		text);
 
 	virtual void	evaluate_el(
-						el::scope&			scope,
+						const el::scope&	scope,
 						const std::string&	text,
 						el::object&			result);
 
 	virtual bool	evaluate_el(
-						el::scope&			scope,
+						const el::scope&	scope,
 						const std::string&	text);
 
 	virtual void	init_scope(
@@ -206,9 +212,10 @@ class webapp : public http::server
 	typedef std::map<std::string,handler_type>		handler_map;
 	typedef std::map<std::string,processor_type>	processor_map;
 	
+	std::string		m_ns;
+	fs::path		m_docroot;
 	handler_map		m_dispatch_table;
 	processor_map	m_processor_table;
-	fs::path		m_docroot;
 };
 
 template<class T>
