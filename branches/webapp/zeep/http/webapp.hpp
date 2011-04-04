@@ -98,6 +98,12 @@ class webapp : public http::server
 
 	void			mount(const std::string& path, handler_type handler);
 
+	// only one handler defined here
+	virtual void	handle_file(
+						const request&		request,
+						const el::scope&	scope,
+						reply&				reply);
+
 	// Use load_template to fetch the XHTML template file
 	virtual void	load_template(
 						const std::string&	file,

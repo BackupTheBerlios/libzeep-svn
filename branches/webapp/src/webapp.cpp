@@ -9,6 +9,8 @@
 #define foreach BOOST_FOREACH
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/date_time/local_time/local_time.hpp>
+#include <boost/iostreams/copy.hpp>
 
 #include <zeep/http/webapp.hpp>
 #include <zeep/xml/unicode_support.hpp>
@@ -16,6 +18,7 @@
 
 using namespace std;
 namespace ba = boost::algorithm;
+namespace io = boost::iostreams;
 
 namespace zeep { namespace http {
 
@@ -129,6 +132,73 @@ void webapp::handle_request(
 void webapp::mount(const std::string& path, handler_type handler)
 {
 	m_dispatch_table[path] = handler;
+}
+
+void webapp::handle_file(
+	const zeep::http::request&	request,
+	const el::scope&			scope,
+	zeep::http::reply&			reply)
+{
+	using namespace boost::local_time;
+	using namespace boost::posix_time;
+	
+	fs::path file = get_docroot() / (string)scope["baseuri"];
+
+	string ifModifiedSince;
+	foreach (const zeep::http::header& h, request.headers)
+	{
+		if (h.name == "If-Modified-Since")
+		{
+			local_date_time modifiedSince(local_sec_clock::local_time(time_zone_ptr()));
+
+			local_time_input_facet* lif1(new local_time_input_facet("%a, %d %b %Y %H:%M:%S GMT"));
+			
+			stringstream ss;
+			ss.imbue(std::locale(std::locale::classic(), lif1));
+			ss.str(h.value);
+			ss >> modifiedSince;
+			
+			local_date_time fileDate(from_time_t(fs::last_write_time(file)), time_zone_ptr());
+			
+			if (fileDate <= modifiedSince)
+			{
+				reply = zeep::http::reply::stock_reply(zeep::http::not_modified);
+				return;
+			}
+			
+			break;
+		}
+	}
+	
+	fs::ifstream in(file, ios::binary);
+	stringstream out;
+
+	io::copy(in, out);
+
+	string mimetype = "text/plain";
+
+	if (file.extension() == ".css")
+		mimetype = "text/css";
+	else if (file.extension() == ".js")
+		mimetype = "text/javascript";
+	else if (file.extension() == ".png")
+		mimetype = "image/png";
+	else if (file.extension() == ".svg")
+		mimetype = "image/svg+xml";
+
+	reply.set_content(out.str(), mimetype);
+
+	local_date_time t(local_sec_clock::local_time(time_zone_ptr()));
+	local_time_facet* lf(new local_time_facet("%a, %d %b %Y %H:%M:%S GMT"));
+	
+	stringstream s;
+	s.imbue(std::locale(std::cout.getloc(), lf));
+	
+	ptime pt = from_time_t(boost::filesystem::last_write_time(file));
+	local_date_time t2(pt, time_zone_ptr());
+	s << t2;
+
+	reply.set_header("Last-Modified", s.str());
 }
 
 void webapp::load_template(
@@ -476,46 +546,30 @@ void webapp::process_option(
 	const el::scope&	scope,
 	fs::path			dir)
 {
-	el::object collection = scope[node->get_attribute("collection")];
-	if (collection.undefined())
-		evaluate_el(scope, node->get_attribute("collection"), collection);
-	
-	if (collection.is_array() and not collection.empty())
+	string value = node->get_attribute("value");
+	string selected = node->get_attribute("selected");
+	if (not selected.empty())
 	{
-		string value = node->get_attribute("value");
-		string label = node->get_attribute("label");
-		
-		string selected = node->get_attribute("selected");
-		if (not selected.empty())
-		{
-			el::object o;
-			evaluate_el(scope, selected, o);
-			selected = (string)o;
-		}
-		
-		foreach (el::object& o, collection)
-		{
-			zeep::xml::element* option = new zeep::xml::element("option");
-	
-			if (not (value.empty() or label.empty()))
-			{
-				option->set_attribute("value", o[value]);
-				if (selected == (string)o[value])
-					option->set_attribute("selected", "selected");
-				option->add_text(o[label]);
-			}
-			else
-			{
-				option->set_attribute("value", (string)o);
-				if (selected == (string)o)
-					option->set_attribute("selected", "selected");
-				option->add_text((string)o);
-			}
-	
-			zeep::xml::container* parent = node->parent();
-			assert(parent);
-			parent->insert(node, option);
-		}
+		el::object o;
+		evaluate_el(scope, selected, o);
+		selected = (string)o;
+	}
+
+	zeep::xml::element* option = new zeep::xml::element("option");
+
+	option->set_attribute("value", value);
+	if (selected == value)
+		option->set_attribute("selected", "selected");
+
+	zeep::xml::container* parent = node->parent();
+	assert(parent);
+	parent->insert(node, option);
+
+	foreach (zeep::xml::node* c, node->nodes())
+	{
+		zeep::xml::node* clone = c->clone();
+		option->push_back(clone);
+		process_xml(clone, scope, dir);
 	}
 }
 
