@@ -58,9 +58,9 @@ class object
 					operator double() const;
 					operator bool() const;
 	
-	object			operator[](const std::string& name) const;
-	object			operator[](const char* name) const;
-	object			operator[](uint32 ix) const;
+	const object	operator[](const std::string& name) const;
+	const object	operator[](const char* name) const;
+	const object	operator[](uint32 ix) const;
 
 	object&			operator[](const std::string& name);
 	object&			operator[](const char* name);

@@ -240,7 +240,7 @@ object::operator bool() const
 	return result;
 }
 
-object object::operator[](
+const object object::operator[](
 	const std::string& name) const
 {
 	std::map<std::string,object>::const_iterator i = m_fields.find(name);
@@ -249,13 +249,13 @@ object object::operator[](
 	return i->second;
 }
 
-object object::operator[](
+const object object::operator[](
 	const char* name) const
 {
 	return operator[](std::string(name));
 }
 
-object object::operator[](uint32 ix) const
+const object object::operator[](uint32 ix) const
 {
 	return m_array[ix];
 }
