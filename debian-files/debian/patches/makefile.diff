@@ -33,7 +33,7 @@ Changes in makefile for distribution as a .deb
  
  libzeep.a: $(OBJECTS)
  	ld -r -o $@ $(OBJECTS)
-@@ -103,8 +95,6 @@
+@@ -104,8 +96,6 @@
  	install zeep/exception.hpp $(INCDIR)/zeep/exception.hpp
  	install zeep/server.hpp $(INCDIR)/zeep/server.hpp
  	install doc/libzeep.3 $(MANDIR)/libzeep.3
