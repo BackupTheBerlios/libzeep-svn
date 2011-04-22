@@ -1,0 +1,44 @@
+Changes in makefile for distribution as a .deb
+--- a/makefile
++++ b/makefile
+@@ -4,18 +4,10 @@
+ # Distributed under the Boost Software License, Version 1.0.
+ #    (See accompanying file LICENSE_1_0.txt or copy at
+ #          http://www.boost.org/LICENSE_1_0.txt)
+-#
+-# You may have to edit the first three defines on top of this
+-# makefile to match your current installation.
+-
+-BOOST_LIB_SUFFIX	= 				# e.g. '-mt'
+-BOOST_LIB_DIR		= $(HOME)/projects/boost/lib
+-BOOST_INC_DIR		= $(HOME)/projects/boost/include
+-
+-PREFIX				?= /usr/local
+-LIBDIR				?= $(PREFIX)/lib
+-INCDIR				?= $(PREFIX)/include
+-MANDIR				?= $(PREFIX)/man/man3
++
++LIBDIR				= $(DESTDIR)/usr/lib
++INCDIR				= $(DESTDIR)/usr/include
++MANDIR				= $(DESTDIR)/usr/share/man/man3
+ 
+ BOOST_LIBS			= system thread filesystem
+ BOOST_LIBS			:= $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
+@@ -54,7 +46,7 @@
+ 	obj/xpath.o \
+ 	obj/writer.o
+ 
+-lib: libzeep.a # libzeep.so
++lib: libzeep.so
+ 
+ libzeep.a: $(OBJECTS)
+ 	ld -r -o $@ $(OBJECTS)
+@@ -103,8 +95,6 @@
+ 	install zeep/exception.hpp $(INCDIR)/zeep/exception.hpp
+ 	install zeep/server.hpp $(INCDIR)/zeep/server.hpp
+ 	install doc/libzeep.3 $(MANDIR)/libzeep.3
+-	install ./libzeep.a $(LIBDIR)/libzeep.a
+-	strip -SX $(LIBDIR)/libzeep.a
+ 	ln -Tfs $(LIB_NAME) $(LIBDIR)/libzeep.so
+ 
+ install: install-libs install-dev

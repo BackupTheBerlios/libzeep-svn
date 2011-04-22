@@ -1,5 +1,7 @@
 #!/usr/bin/make -f
 
+export DH_VERBOSE=1
+
 CFLAGS = $(shell dpkg-buildflags --get CFLAGS)
 LDFLAGS = $(shell dpkg-buildflags --get LDFLAGS)
 
@@ -7,12 +9,8 @@ LDFLAGS = $(shell dpkg-buildflags --get LDFLAGS)
 	dh $@
 
 override_dh_auto_build:
-	$(MAKE) DBF_CFLAGS="$(CFLAGS)" \
-			DBF_LDFLAGS="$(LDFLAGS)" \
-			lib
+	$(MAKE) lib
 
 override_dh_auto_install:
-	$(MAKE) PREFIX=$(CURDIR)/debian/libzeep2/usr install-libs
-	$(MAKE) PREFIX=$(CURDIR)/debian/libzeep-dev/usr \
-			MANDIR=$(CURDIR)/debian/libzeep-dev/usr/share/man/man3 \
-			install-dev
+	$(MAKE) DESTDIR=$(CURDIR)/debian/libzeep2.5 install-libs
+	$(MAKE) DESTDIR=$(CURDIR)/debian/libzeep-dev install-dev

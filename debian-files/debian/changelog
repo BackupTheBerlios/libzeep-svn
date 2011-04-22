@@ -1,5 +1,5 @@
-libzeep (2.0.1-1) unstable; urgency=low
+libzeep (2.5.0-1) unstable; urgency=low
 
-  * Initial release Closes: #609541.
+  * Initial PPA release
 
- -- Maarten L. Hekkelman <m.hekkelman@cmbi.ru.nl>  Wed, 10 Jan 2011 11:00:00 +0100
+ -- Maarten L. Hekkelman <m.hekkelman@cmbi.ru.nl>  Wed, 21 Apr 2011 11:00:00 +0100

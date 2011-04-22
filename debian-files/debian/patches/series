@@ -1,1 +1,2 @@
-drop-static-lib.patch
+makefile.diff
+debian-changes-2.5.0-1
