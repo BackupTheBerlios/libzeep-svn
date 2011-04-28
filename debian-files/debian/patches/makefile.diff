@@ -22,7 +22,7 @@ Changes in makefile for distribution as a .deb
 +INCDIR				= $(DESTDIR)/usr/include
 +MANDIR				= $(DESTDIR)/usr/share/man/man3
  
- BOOST_LIBS			= system thread filesystem
+ BOOST_LIBS			= system thread filesystem regex
  BOOST_LIBS			:= $(BOOST_LIBS:%=boost_%$(BOOST_LIB_SUFFIX))
 @@ -54,7 +46,7 @@
  	obj/xpath.o \
